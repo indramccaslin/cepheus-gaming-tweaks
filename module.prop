@@ -3,5 +3,5 @@ name=Cepheus Game Booster
 author=indramccaslin
 version=2.0.0
 versionCode=3
-description=Modul gabungan (thermal + gaming) untuk kelancaran FPS di Xiaomi Mi 9 (cepheus/sm8150). SAAT GAME: lepas throttle thermal userspace (pause mi_thermald + reset cooling & clamp CPU) + GPU floor. Di LUAR game thermal berjalan normal. Plus I/O deadline & VM. Aman bareng Encore Tweaks (CPU governor/cpufreq diurus Encore).
+description=Combined thermal + gaming module for smooth FPS on Xiaomi Mi 9 (cepheus/sm8150). IN-GAME: releases userspace thermal throttling (pauses mi_thermald + resets cooling & CPU clamp) and raises the GPU floor. OUTSIDE games, thermal runs normally. Also applies I/O deadline and VM tuning. Safe alongside Encore Tweaks (Encore manages CPU governor/cpufreq).
 updateJson=https://raw.githubusercontent.com/indramccaslin/cepheus-gaming-tweaks/main/update.json

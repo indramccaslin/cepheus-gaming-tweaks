@@ -1,29 +1,31 @@
 #!/system/bin/sh
 ########################################
-# Cepheus Gaming Tweaks (service.sh) v2.0
-# Modul gabungan: GPU floor + I/O + VM +
-# pelepas throttle thermal (KHUSUS saat game).
+# Cepheus Game Booster (service.sh) v2.0
+# Combined module: GPU floor + I/O + VM +
+# thermal throttle release (IN-GAME ONLY).
 #
-# Thermal: ketika game terdeteksi, daemon
-# userspace mi_thermald di-pause (SIGSTOP)
-# lalu cooling-device & clamp frekuensi CPU
-# dibersihkan, supaya big/prime tidak dikunci
-# ke ~1.28-1.49GHz saat suhu kulit 44-48C.
-# Begitu game ditutup, daemon di-resume
-# (thermal normal lagi). Proteksi kernel
-# (lmh-dcvs 85C, pop-mem 95C, cpu-step 110C)
-# tetap berjalan.
+# Thermal: when a game is detected, the
+# userspace daemon mi_thermald is paused
+# (SIGSTOP), then cooling devices and the
+# CPU frequency clamp are cleared so the
+# big/prime cores are not pinned to
+# ~1.28-1.49GHz at a 44-48C skin temp.
+# When the game is closed, the daemon is
+# resumed (normal thermal again). Kernel
+# protection (lmh-dcvs 85C, pop-mem 95C,
+# cpu-step 110C) stays active.
 #
-# Tidak menyentuh domain Encore Tweaks
-# (CPU governor/cpufreq/schedtune diurus Encore);
-# status game dibaca read-only dari Encore.
+# Does not touch Encore Tweaks' domain
+# (CPU governor/cpufreq/schedtune are
+# handled by Encore); game state is read
+# read-only from Encore.
 ########################################
 
 MODDIR=${MODDIR:-$(dirname "$0")}
 CONF="$MODDIR/tweak.conf"
 LOG="$MODDIR/tweak.log"
 
-log() { echo "[cepheus-tweaks] $*" >>"$LOG"; }
+log() { echo "[cepheus-booster] $*" >>"$LOG"; }
 
 read_opt() {
 	local v
@@ -31,7 +33,7 @@ read_opt() {
 	[ -n "$v" ] && echo "$v" || echo "$2"
 }
 
-# tunggu sampai boot benar-benar selesai
+# wait until boot fully completes
 n=0
 while [ -z "$(getprop sys.boot_completed)" ]; do
 	sleep 5
@@ -69,14 +71,14 @@ fg_pkg() {
 
 game_active() {
 	local p pid fg
-	# sinyal 1: status game dari Encore (read-only), + cek proses masih hidup
+	# signal 1: game state from Encore (read-only) + process liveness check
 	if [ -r "$GAMEINFO" ]; then
 		read -r p pid _ <"$GAMEINFO" 2>/dev/null
 		if [ -n "$p" ] && [ "$p" != "NULL" ]; then
 			if [ -z "$pid" ] || [ -d "/proc/$pid" ]; then return 0; fi
 		fi
 	fi
-	# sinyal 2: app foreground termasuk daftar game Encore
+	# signal 2: foreground app is in Encore's game list
 	if [ -r "$GAMELIST" ]; then
 		fg=$(fg_pkg)
 		[ -n "$fg" ] && grep -q "\"$fg\"" "$GAMELIST" 2>/dev/null && return 0
@@ -128,7 +130,7 @@ daemon_sig() {
 	echo "$s"
 }
 
-# ---------- I/O (statis, aman setiap saat) ----------
+# ---------- I/O (static, safe at all times) ----------
 if [ "$EN_IO" = "true" ]; then
 	for d in /sys/block/sd* /sys/block/mmcblk*; do
 		[ -e "$d/queue/scheduler" ] || continue
@@ -138,7 +140,7 @@ if [ "$EN_IO" = "true" ]; then
 	done
 fi
 
-# ---------- VM (statis) ----------
+# ---------- VM (static) ----------
 if [ "$EN_VM" = "true" ]; then
 	[ -w /proc/sys/vm/vfs_cache_pressure ] && echo "$VM_VFS" >/proc/sys/vm/vfs_cache_pressure && log "vm: vfs_cache_pressure -> $VM_VFS"
 	[ -w /proc/sys/vm/dirty_writeback_centisecs ] && echo "$VM_DWC" >/proc/sys/vm/dirty_writeback_centisecs && log "vm: dirty_writeback_centisecs -> $VM_DWC"
@@ -149,7 +151,7 @@ if [ "$EN_GPU" = "true" ] && [ -w "$G/devfreq/governor" ]; then
 	echo msm-adreno-tz >"$G/devfreq/governor" 2>/dev/null && log "gpu: governor -> msm-adreno-tz"
 fi
 
-# ---------- mode statis (tanpa deteksi game) ----------
+# ---------- static mode (no game detection) ----------
 if [ "$GP_DYN" != "true" ]; then
 	[ "$EN_GPU" = "true" ] && gpu_floor "$GPU_GAME_FLOOR"
 	if [ "$EN_THERMAL" = "true" ]; then
@@ -162,8 +164,8 @@ if [ "$GP_DYN" != "true" ]; then
 	exit 0
 fi
 
-# ---------- mode dinamis ----------
-# mulai dari kondisi idle
+# ---------- dynamic mode ----------
+# start from idle state
 if [ "$EN_GPU" = "true" ] && [ "$(cat "$G/min_pwrlevel" 2>/dev/null)" != "$GPU_IDLE_FLOOR" ]; then
 	gpu_floor "$GPU_IDLE_FLOOR"
 fi
@@ -180,7 +182,7 @@ while true; do
 			log "game: entered"
 		fi
 		if [ "$EN_THERMAL" = "true" ]; then
-			# idempotent: pastikan daemon selalu ter-pause
+			# idempotent: keep the daemon paused at all times
 			stop_daemons
 			cur_sig=$(daemon_sig)
 			if [ "$cur_sig" != "$last_sig" ]; then
@@ -195,7 +197,7 @@ while true; do
 			state=idle
 			[ "$EN_GPU" = "true" ] && gpu_floor "$GPU_IDLE_FLOOR"
 			[ "$EN_THERMAL" = "true" ] && cont_daemons
-			log "game: exited (thermal kembali normal)"
+			log "game: exited (thermal back to normal)"
 		fi
 	fi
 	sleep 3

@@ -1,6 +1,6 @@
 #!/bin/sh
-# Build flashable zip untuk KernelSU / Magisk.
-# Pakai: sh build.sh
+# Build a flashable zip for KernelSU / Magisk.
+# Usage: sh build.sh
 set -eu
 
 MODDIR=$(cd "$(dirname "$0")" && pwd)
