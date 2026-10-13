@@ -1,4 +1,4 @@
-# Cepheus Gaming Tweaks
+# Cepheus Game Booster
 
 Modul **KernelSU / Magisk** untuk kelancaran FPS game di **Xiaomi Mi 9 (cepheus, sm8150)**.
 
