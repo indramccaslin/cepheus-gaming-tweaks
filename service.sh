@@ -1,6 +1,6 @@
 #!/system/bin/sh
 ########################################
-# Cepheus Gaming Tweaks (service.sh) v3.2.0
+# Cepheus Tweaks (service.sh) v3.5.0
 # Berdiri sendiri untuk KernelSU-Next (tidak butuh Encore).
 #
 # Saat game terdeteksi (app foreground ada di gamelist.txt):
@@ -11,6 +11,11 @@
 #   UNLOCK: hentikan mi_thermald & thermal-engine + paksa cpu_limits ke max
 #           (menembus throttle Xiaomi yang mengunci big-core di suhu rendah)
 # Saat keluar game: semua dipulihkan ke nilai idle.
+#
+# MODE (tweak.conf):
+#   gaming (default) = perilaku di atas (profil lengkap saat game terdeteksi).
+#   global           = HANYA batas frekuensi maksimum CPU (*_MAX) yang aktif,
+#                      berlaku terus (siaga & game); semua fitur lain dimatikan.
 #
 # Statis (sekali): I/O scheduler/readahead, VM, NET, kernel.
 # WebUI (webroot/) bisa mengubah gamelist.txt & tweak.conf lalu men-*touch*
@@ -66,7 +71,7 @@ if [ "$1" != "--worker" ]; then
 		exit 0
 	fi
 	: > "$LOG"
-	log "invoked (v3.2.0) boot#$c"
+	log "invoked (v3.5.0) boot#$c"
 	setsid "$0" --worker </dev/null >>"$LOG" 2>&1 &
 	echo $! > "$PIDFILE"
 	log "worker detached (pid $!)"
@@ -77,7 +82,7 @@ fi
 while [ -z "$(getprop sys.boot_completed)" ]; do sleep 10; done
 sleep 15
 
-	log "started (v3.2.0)"
+	log "started (v3.5.0)"
 
 # ---------------- paths ----------------
 G=/sys/class/kgsl/kgsl-3d0
@@ -128,6 +133,11 @@ game_active() {
 
 # ---------------- config ----------------
 load_config() {
+	# MODE: global = HANYA batas frekuensi CPU (*_MAX), berlaku terus (siaga &
+	#       game); semua fitur lain dimatikan. gaming = profil lengkap saat game
+	#       terdeteksi (perilaku lama).
+	MODE=$(read_opt MODE gaming)
+	case "$MODE" in global|gaming) ;; *) MODE=gaming ;; esac
 	EN_CPU=$(read_opt GP_CPU true)
 	EN_GPU=$(read_opt GP_GPU true)
 	EN_IO=$(read_opt GP_IO true)
@@ -150,6 +160,13 @@ load_config() {
 	SCHED_WAKEUP_GRA=$(read_opt SCHED_WAKEUP_GRANULARITY_NS 1000000)
 	MSMPERF_MIN=$(read_opt MSMPERF_MIN 0)
 	CPU_LOCK_MAX=$(read_opt CPU_LOCK_MAX true)
+	# batas frekuensi tiap cluster saat game; 0/kosong/>hw max = tanpa batas
+	LITTLE_MAX=$(read_opt LITTLE_MAX 1785600)
+	MID_MAX=$(read_opt MID_MAX 2419200)
+	PRIME_MAX=$(read_opt PRIME_MAX 2841600)
+	case "$LITTLE_MAX" in ''|*[!0-9]*) LITTLE_MAX=1785600 ;; esac
+	case "$MID_MAX" in ''|*[!0-9]*) MID_MAX=2419200 ;; esac
+	case "$PRIME_MAX" in ''|*[!0-9]*) PRIME_MAX=2841600 ;; esac
 	ALL_CORES_ONLINE=$(read_opt ALL_CORES_ONLINE true)
 	CPU_BOOST_INPUT=$(read_opt CPU_BOOST_INPUT true)
 	CPU_BOOST_MS=$(read_opt CPU_BOOST_MS 2000)
@@ -171,6 +188,9 @@ load_config() {
 	THERMAL_GAME=$(read_opt THERMAL_GAME true)
 	GPU_TRIP_GAME=$(read_opt GPU_TRIP_GAME 92000)
 	CPU_TRIP_GAME=$(read_opt CPU_TRIP_GAME 115000)
+	# zona lmh-dcvs (hardware throttle 85C). Dinaikkan saat game agar LMH
+	# mulai lebih lambat; dipulihkan saat idle. 0 = jangan diubah.
+	LMH_TRIP_GAME=$(read_opt LMH_TRIP_GAME 95000)
 	THERMAL_UNLOCK=$(read_opt THERMAL_UNLOCK true)
 	TOUCH_GAME=$(read_opt TOUCH_GAME true)
 
@@ -236,6 +256,27 @@ ORIG_CB_FREQ=$(cat "$CB/input_boost_freq" 2>/dev/null)
 ORIG_CB_MS=$(cat "$CB/input_boost_ms" 2>/dev/null)
 ORIG_CB_SBOI=$(cat "$CB/sched_boost_on_input" 2>/dev/null)
 
+# ---------------- batas frekuensi per core ----------------
+# cpuinfo_max <core> : frekuensi maksimum hardware core tsb (kHz)
+cpuinfo_max() { cat "/sys/devices/system/cpu/cpu$1/cpufreq/cpuinfo_max_freq" 2>/dev/null; }
+# cap_for <core> : batas freq yang boleh dipakai (per cluster dibatasi *_MAX).
+# Nilai di-clamp ke hw max; 0 / kosong / > hw max = tanpa batas.
+cap_for() {
+	local hw cap
+	hw=$(cpuinfo_max "$1")
+	case "$1" in
+		0|1|2|3) cap=$LITTLE_MAX ;;
+		4|5|6)   cap=$MID_MAX ;;
+		7)       cap=$PRIME_MAX ;;
+		*)       cap= ;;
+	esac
+	if [ -n "$cap" ] && [ "$cap" -gt 0 ] 2>/dev/null && [ "$cap" -lt "${hw:-99999999}" ] 2>/dev/null; then
+		echo "$cap"
+	else
+		echo "$hw"
+	fi
+}
+
 # ---------------- CPU governor ----------------
 cpu_gov() { # $1 = nama governor, atau "orig" untuk nilai stok
 	local g=$1 d
@@ -265,7 +306,7 @@ cpu_lock() {
 		fmin="$CPUFREQ/policy$p/scaling_min_freq"
 		[ -w "$fmax" ] || continue
 		if [ "$1" = "game" ]; then
-			mx=$(cat "$CPUFREQ/policy$p/cpuinfo_max_freq" 2>/dev/null)
+			mx=$(cap_for "$p")
 			[ -n "$mx" ] || continue
 			# URUTAN PENTING: naikkan max DULU, baru min. Kalau min dinaikkan
 			# lebih dulu, kernel meng-clamp-nya ke max lama (freq mentok).
@@ -297,9 +338,9 @@ cpu_boost_set() {
 	[ -r "$CB/input_boost_freq" ] || return 0
 	if [ "$1" = "game" ] && [ "$CPU_BOOST_INPUT" = "true" ]; then
 		local f="" c mx
-		for c in 0 1 2 3; do mx=$(cat "$CPUFREQ/policy0/cpuinfo_max_freq" 2>/dev/null); f="$f$c:$mx "; done
-		for c in 4 5 6; do mx=$(cat "$CPUFREQ/policy4/cpuinfo_max_freq" 2>/dev/null); f="$f$c:$mx "; done
-		mx=$(cat "$CPUFREQ/policy7/cpuinfo_max_freq" 2>/dev/null); f="${f}7:$mx"
+		for c in 0 1 2 3; do mx=$(cap_for 0); f="$f$c:$mx "; done
+		for c in 4 5 6; do mx=$(cap_for 4); f="$f$c:$mx "; done
+		mx=$(cap_for 7); f="${f}7:$mx"
 		wr "$CB/input_boost_freq" "$f"
 		wr "$CB/input_boost_ms" "$CPU_BOOST_MS"
 		[ "$SCHED_BOOST_ON_INPUT" = "true" ] && wr "$CB/sched_boost_on_input" 1
@@ -405,6 +446,7 @@ build_thermal_list() {
 		case "$typ" in
 			gpuss-max-step) kind=gpu ;;
 			cpu-0-0-step|cpu-1-0-step) kind=cpu ;;
+			lmh-dcvs-00|lmh-dcvs-01) kind=lmh ;;
 			*) continue ;;
 		esac
 		[ -w "$z/trip_point_0_temp" ] || continue
@@ -421,6 +463,7 @@ thermal_set() {
 		if [ "$1" = "game" ]; then
 			[ "$kind" = "gpu" ] && echo "$GPU_TRIP_GAME" > "$zone/trip_point_0_temp" 2>/dev/null
 			[ "$kind" = "cpu" ] && echo "$CPU_TRIP_GAME" > "$zone/trip_point_0_temp" 2>/dev/null
+			[ "$kind" = "lmh" ] && [ "${LMH_TRIP_GAME:-0}" -gt 0 ] 2>/dev/null && echo "$LMH_TRIP_GAME" > "$zone/trip_point_0_temp" 2>/dev/null
 		else
 			echo "$orig" > "$zone/trip_point_0_temp" 2>/dev/null
 		fi
@@ -442,7 +485,7 @@ thermal_unlock_on() {
 		# menimpa baris sebelumnya sehingga hanya core terakhir yang berlaku.
 		{
 			for c in 0 1 2 3 4 5 6 7; do
-				m=$(cat /sys/devices/system/cpu/cpu$c/cpufreq/cpuinfo_max_freq 2>/dev/null)
+				m=$(cap_for "$c")
 				[ -n "$m" ] && echo "cpu$c $m"
 			done
 		} > "$THERMAL_MSG/cpu_limits" 2>/dev/null
@@ -472,7 +515,7 @@ enforce_game() {
 		local c m
 		{
 			for c in 0 1 2 3 4 5 6 7; do
-				m=$(cat /sys/devices/system/cpu/cpu$c/cpufreq/cpuinfo_max_freq 2>/dev/null)
+				m=$(cap_for "$c")
 				[ -n "$m" ] && echo "cpu$c $m"
 			done
 		} > "$THERMAL_MSG/cpu_limits" 2>/dev/null
@@ -544,7 +587,7 @@ apply_game() {
 	[ "$EN_BYPASS" = "true" ] && bypass_charge on
 	thermal_set game
 	touch_set game
-	log "GAME: cpu=$CPU_GAME_GOV lock=$CPU_LOCK_MAX gpu_floor=$GPU_GAME_FLOOR unlock=$THERMAL_UNLOCK bypass=$EN_BYPASS"
+	log "GAME: cpu=$CPU_GAME_GOV lock=$CPU_LOCK_MAX cap=$LITTLE_MAX/$MID_MAX/$PRIME_MAX gpu_floor=$GPU_GAME_FLOOR unlock=$THERMAL_UNLOCK bypass=$EN_BYPASS"
 }
 apply_idle() {
 	if [ "$EN_CPU" = "true" ]; then
@@ -565,14 +608,47 @@ apply_idle() {
 	log "IDLE: cpu=$CPU_IDLE_GOV gpu_floor=$GPU_IDLE_FLOOR"
 }
 
+# ---------------- mode global (CPU-only, selalu) ----------------
+# Mode Global: HANYA batas frekuensi maksimum CPU (*_MAX) yang diterapkan, dan
+# berlaku terus (siaga & game). Semua fitur lain dipulihkan ke stok/dimatikan.
+apply_global() {
+	# stok dulu: governor idle, GPU idle, thermal hidup, bypass off, dst.
+	apply_idle
+	# lalu pasang plafon frekuensi tiap cluster (min dibiarkan stok).
+	local p mx fmax
+	for p in 0 4 7; do
+		fmax="$CPUFREQ/policy$p/scaling_max_freq"
+		[ -w "$fmax" ] || continue
+		mx=$(cap_for "$p")
+		[ -n "$mx" ] && wr "$fmax" "$mx"
+	done
+	log "GLOBAL: cap=$LITTLE_MAX/$MID_MAX/$PRIME_MAX (cpu-only, selalu aktif)"
+}
+# re-enforce ringan: turunkan hanya bila scaling_max naik DI ATAS cap (mis. ROM
+# reset). Tidak melawan thermal yang memang menurunkan (biarkan proteksi HW).
+enforce_global() {
+	local p mx cur fmax
+	for p in 0 4 7; do
+		fmax="$CPUFREQ/policy$p/scaling_max_freq"
+		[ -w "$fmax" ] || continue
+		mx=$(cap_for "$p"); cur=$(cat "$fmax" 2>/dev/null)
+		[ -n "$mx" ] && [ -n "$cur" ] && [ "$cur" -gt "$mx" ] 2>/dev/null && wr "$fmax" "$mx"
+	done
+}
+
 # ---------------- inisialisasi ----------------
 apply_static
 build_thermal_list
 log "thermal: $(wc -l < "$TZ_LIST" 2>/dev/null) zone target"
 
-# baseline idle (juga memastikan daemon thermal hidup)
-apply_idle
-state=idle
+# baseline: sesuai MODE (global = cap CPU selalu; gaming = idle)
+if [ "$MODE" = "global" ]; then
+	apply_global
+	state=global
+else
+	apply_idle
+	state=idle
+fi
 
 # FAILSAFE: kalau sampai di sini + sistem tetap hidup 45 detik, anggap boot
 # sukses -> reset counter (sehingga tidak ke-disable setelah 3 boot normal).
@@ -587,11 +663,24 @@ while :; do
 		rm -f "$RELOAD"
 		load_config
 		apply_static
-		if [ "$state" = "game" ]; then apply_game; else apply_idle; fi
-		log "reload: konfigurasi dibaca ulang"
+		if [ "$MODE" = "global" ]; then
+			apply_global; state=global
+		elif game_active; then
+			apply_game; state=game
+		else
+			apply_idle; state=idle
+		fi
+		log "reload: konfigurasi dibaca ulang (mode=$MODE)"
 	fi
 
-	if game_active; then
+	if [ "$MODE" = "global" ]; then
+		if [ "$state" != "global" ]; then
+			apply_global
+			state=global
+		else
+			enforce_global
+		fi
+	elif game_active; then
 		if [ "$state" != "game" ]; then
 			apply_game
 			state=game

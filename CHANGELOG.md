@@ -1,5 +1,33 @@
 # Changelog
 
+## v3.5.0 (versionCode 30050)
+- **Semua frekuensi tersedia di WebUI** — tabel Little / Mid / Prime kini menampilkan **seluruh** step frekuensi yang dilaporkan kernel (`scaling_available_frequencies`), dibaca dinamis dari `/sys/devices/system/cpu/cpufreq/policy{0,4,7}`. Ada penanda *Maksimum (stok)* dan *Minimum*, serta fallback statis bila node tidak terbaca.
+- **Expand/collapse per cluster** — kartu Little / Mid / Prime dapat diklik untuk membuka/menutup daftar frekuensi; header menampilkan frekuensi terpilih. Status buka diingat per cluster (localStorage).
+- **Teks WebUI lebih profesional** — seluruh penjelasan (mode, CPU, daftar game, pengaturan) ditulis ulang agar lebih jelas dan teknis.
+- **Pengaturan: ganti bahasa** — kartu baru **Pengaturan** hanya berisi pemilih bahasa **Bahasa Indonesia / English**; seluruh teks WebUI mengikuti pilihan tersebut dan tersimpan di localStorage.
+
+## v3.4.0 (versionCode 30040)
+- **Mode Global / Gaming (WebUI baru)** — pemilih mode di paling atas:
+  - **Global** — HANYA batas frekuensi CPU (`*_MAX`) yang aktif, dan **berlaku terus** (siaga & game). Semua fitur lain dimatikan/dipulihkan ke stok. Cocok untuk harian (adem/hemat baterai).
+  - **Gaming** — profil lengkap (CPU/GPU/thermal/bypass charging/tuning) aktif otomatis saat game dibuka (perilaku sebelumnya).
+  - Disimpan sebagai `MODE=gaming|global` di `tweak.conf`. `service.sh` punya `apply_global`/`enforce_global` (re-enforce ringan hanya bila `scaling_max` naik di atas cap; tidak melawan proteksi thermal).
+- **Tampilan WebUI dirombak** — tema gelap modern, gradien, ikon SVG inline (mode/CPU/daftar game), kartu mode dapat diketuk, chip frekuensi aktif per cluster.
+- **Daftar Game expand/collapse** — header dapat diketuk untuk buka/tutup; ada badge jumlah game; status buka diingat (localStorage). Daftar game hanya tampil di Mode Gaming.
+
+## v3.3.1 (versionCode 30031)
+- **Kontrol throttle LMH (hardware) via WebUI/conf** — opsi baru `LMH_TRIP_GAME` (default `95000` = 95°C). Saat game, trip zona `lmh-dcvs-00`/`lmh-dcvs-01` (stok 85°C) dinaikkan agar LMH mulai lebih lambat; dipulihkan ke nilai stok saat idle. `0` = jangan diubah.
+- Zona `lmh-dcvs` ditambahkan ke `build_thermal_list` (kind `lmh`) sehingga trip-nya di-backup & di-restore otomatis.
+- Catatan: batas keras LMH sejati (sensor isens/tegangan di silikon) + BCL tetap aktif dan tidak bisa dimatikan dari userspace (butuh patch kernel/DT `qcom,plat-mitigation-disable`).
+
+## v3.3.0 (versionCode 30030)
+- **Frekuensi CPU per cluster (WebUI)** — 3 tabel di paling atas WebUI (Little / Mid / Prime), masing-masing **4** pilihan batas frekuensi maksimum saat game:
+  - **Little (core 0-3)** — 1.785 / 1.709 / 1.555 / 1.306 GHz
+  - **Mid (core 4-6)** — 2.419 / 2.131 / 2.016 / 1.805 GHz
+  - **Prime (core 7)** — 2.841 / 2.650 / 2.419 / 2.131 GHz
+  Menurunkan frekuensi sering justru menaikkan GIPS *sustained* (throttle LMH mulai lebih lambat).
+- Config baru `LITTLE_MAX` / `MID_MAX` / `PRIME_MAX` (kHz). Dipakai oleh `cpu_lock`, `thermal_unlock`/`cpu_limits`, input-boost `cpu_boost`, dan `enforce_game`. Nilai di-clamp ke hw max; `0`/kosong/>hw max = tanpa batas.
+- Log GAME kini menampilkan `cap=<little>/<mid>/<prime>`.
+
 ## v3.2.6 (versionCode 30026)
 - **Standalone** — no longer needs Encore Tweaks or any other daemon.
 - **WebUI** (KernelSU-Next Manager) to manage the game list. Fixed the app picker: `ksu.exec()` (sync) only returns the *last* line, so the WebUI now uses `ksu.listPackages()` for the app list and reads the multi-line `gamelist.txt` in a single-line-safe way.

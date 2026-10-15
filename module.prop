@@ -1,6 +1,6 @@
-id=cepheus-gaming-tweaks
-name=Cepheus Gaming Tweaks
-version=v3.2.6
-versionCode=30026
+id=cepheus-tweaks
+name=Cepheus Tweaks
+version=v3.5.0
+versionCode=30050
 author=indramccaslin
 description=Kunci CPU & GPU ke performa maksimum otomatis saat game dibuka (60fps stabil, anti frame-drop). GPU dikunci tepat di 770MHz + cap thermal dibuka + bypass charging saat main (HP ditenagai adaptor, baterai adem). Deteksi game ~2s. WebUI simpel: cukup tambah daftar game. Boot-safe (service.sh + failsafe). Xiaomi Mi 9 (cepheus/sm8150).

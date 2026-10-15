@@ -1,4 +1,4 @@
-# Cepheus Gaming Tweaks - daftar game (standalone)
+# Cepheus Tweaks - daftar game (standalone)
 # Satu nama paket per baris. Modul aktif saat app ini di foreground.
 # Cara termudah: buka WebUI modul di KernelSU-Next Manager (tombol "WebUI"),
 # tambah/hapus game dari daftar app, lalu "Simpan & Terapkan" (tanpa reboot).

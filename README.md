@@ -1,4 +1,4 @@
-# Cepheus Gaming Tweaks
+# Cepheus Tweaks
 
 A **standalone** KernelSU-Next (and Magisk) module that automatically locks the **CPU and GPU to maximum performance while a game is in the foreground** — stable 60 fps and anti frame-drop — for the **Xiaomi Mi 9 (cepheus, sm8150)**. Outside games the system runs normally (no Encore Tweaks or other daemon required).
 
@@ -22,7 +22,7 @@ It ships with a **WebUI** (KernelSU-Next Manager) to manage the game list.
 
 ## Install
 
-1. Download `cepheus-gaming-tweaks-vX.Y.Z.zip` from [Releases](../../releases).
+1. Download `Cepheus-Tweaks-vX.Y.Z.zip` from [Releases](../../releases).
 2. KernelSU-Next / Magisk Manager → **Modules** → **Install from storage** → pick the zip.
 3. Reboot.
 
@@ -30,7 +30,7 @@ The module also exposes `update.json` so the manager can check for updates.
 
 ## Usage (WebUI)
 
-Manager → **Modules** → **Cepheus Gaming Tweaks** → **WebUI**:
+Manager → **Modules** → **Cepheus Tweaks** → **WebUI**:
 
 - **Daftar Game** — add/remove packages. Type the package name manually or tap
   **Pilih dari daftar aplikasi** to pick from the installed apps.
@@ -39,7 +39,7 @@ Manager → **Modules** → **Cepheus Gaming Tweaks** → **WebUI**:
 
 ## Configuration
 
-Everything lives in `/data/adb/modules/cepheus-gaming-tweaks/tweak.conf` (also editable from the WebUI):
+Everything lives in `/data/adb/modules/cepheus-tweaks/tweak.conf` (also editable from the WebUI):
 
 | Key | Default | Description |
 |---|---|---|
@@ -73,11 +73,11 @@ awk '{print $3}' /proc/$(pidof mi_thermald)/stat
 cat /sys/class/kgsl/kgsl-3d0/thermal_pwrlevel
 ```
 
-Log: `/data/adb/modules/cepheus-gaming-tweaks/tweak.log`.
+Log: `/data/adb/modules/cepheus-tweaks/tweak.log`.
 
 ## Disable / Uninstall
 
-- Temporarily disable: create `/data/adb/modules/cepheus-gaming-tweaks/disable`.
+- Temporarily disable: create `/data/adb/modules/cepheus-tweaks/disable`.
 - Uninstall: remove the folder (or via the manager). `uninstall.sh` restores the
   governor, GPU, scheduler and restarts the thermal daemons.
 

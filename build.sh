@@ -8,7 +8,7 @@ cd "$MODDIR"
 
 VERSION=$(sed -n 's/^version=//p' module.prop | head -n1)
 VERSION=${VERSION#v}
-OUT="cepheus-gaming-tweaks-v${VERSION}.zip"
+OUT="Cepheus-Tweaks-v${VERSION}.zip"
 
 FILES="module.prop service.sh tweak.conf uninstall.sh customize.sh gamelist.txt README.md webroot META-INF"
 

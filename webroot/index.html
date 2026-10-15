@@ -3,72 +3,177 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Cepheus Gaming Tweaks</title>
+<title>Cepheus Tweaks</title>
 <style>
-  :root{--bg:#0e1116;--card:#171c24;--card2:#1e242e;--line:#2a3240;--txt:#e6ebf2;--dim:#8b97a8;--acc:#4f8cff;--ok:#37c98b;--err:#ff5c6c}
+  :root{
+    --bg:#0b0e13;--bg2:#0f1420;--card:#141a24;--card2:#1b222f;--line:#28313f;
+    --txt:#e8edf5;--dim:#8a96a8;--acc:#4f8cff;--acc2:#7c5cff;--ok:#37c98b;--err:#ff5c6c;
+    --warnb:#3a2a12;--warnl:#6b4a17;--warnt:#ffd591;
+  }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.55 system-ui,-apple-system,Roboto,sans-serif;padding:14px 14px 48px;max-width:720px;margin:0 auto}
-  h1{font-size:18px;margin:2px 0 2px}
-  .sub{color:var(--dim);font-size:12px;margin-bottom:14px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
-  .card h2{font-size:15px;margin:0 0 6px}
+  body{
+    margin:0;color:var(--txt);font:15px/1.55 system-ui,-apple-system,Roboto,sans-serif;
+    padding:16px 14px 60px;max-width:720px;margin:0 auto;min-height:100vh;
+    background:
+      radial-gradient(900px 500px at 100% -8%,rgba(124,92,255,.18),transparent 60%),
+      radial-gradient(700px 420px at -10% 0%,rgba(79,140,255,.16),transparent 55%),
+      linear-gradient(180deg,var(--bg2),var(--bg));
+    background-attachment:fixed;
+  }
+  .top{display:flex;align-items:center;gap:12px;margin:2px 0 16px}
+  .logo{width:46px;height:46px;border-radius:14px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--acc),var(--acc2));box-shadow:0 8px 22px -8px rgba(79,140,255,.7)}
+  .logo svg{width:26px;height:26px;color:#fff}
+  .top h1{font-size:19px;margin:0;letter-spacing:.2px}
+  .top .sub{color:var(--dim);font-size:12px;margin-top:1px}
+  .badge{margin-left:auto;font-size:11px;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:4px 10px;background:var(--card)}
+  .card{background:linear-gradient(180deg,var(--card),#121826);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 10px 30px -22px #000}
+  .card h2{font-size:14px;margin:0 0 4px;display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:.6px;color:#c7d2e4}
+  .card h2 svg{width:16px;height:16px;color:var(--acc)}
   .hint{color:var(--dim);font-size:12px;margin-bottom:12px}
   .row{display:flex;gap:8px;flex-wrap:wrap}
   .grow{flex:1;min-width:140px}
-  input{width:100%;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
-  button{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:10px 15px;font:inherit;font-weight:600}
+  input{width:100%;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:11px 12px;font:inherit;outline:none}
+  input:focus{border-color:var(--acc)}
+  button{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border:0;border-radius:12px;padding:11px 16px;font:inherit;font-weight:600;cursor:pointer}
   button.ghost{background:transparent;border:1px solid var(--line);color:var(--txt);font-weight:500}
-  button.danger{background:transparent;border:1px solid var(--err);color:var(--err);padding:8px 12px}
+  button.danger{background:transparent;border:1px solid var(--err);color:var(--err);padding:8px 12px;font-weight:600}
   button:active{transform:scale(.98)}
+  /* mode tiles */
+  .modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .mode{position:relative;border:1px solid var(--line);background:var(--card2);border-radius:16px;padding:14px;cursor:pointer;transition:.18s;overflow:hidden}
+  .mode .mi{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#0f1622;border:1px solid var(--line);margin-bottom:10px;transition:.18s}
+  .mode .mi svg{width:22px;height:22px;color:var(--dim);transition:.18s}
+  .mode b{display:block;font-size:15px}
+  .mode small{display:block;color:var(--dim);font-size:11px;margin-top:3px;line-height:1.35}
+  .mode.sel{border-color:transparent;box-shadow:0 0 0 1.5px var(--acc),0 12px 30px -16px var(--acc)}
+  .mode.sel .mi{background:linear-gradient(135deg,var(--acc),var(--acc2));border-color:transparent}
+  .mode.sel .mi svg{color:#fff}
+  .mode.sel b{color:#fff}
+  .mode[data-m="gaming"].sel{box-shadow:0 0 0 1.5px #ff6a3d,0 12px 30px -16px #ff6a3d}
+  .mode[data-m="gaming"].sel .mi{background:linear-gradient(135deg,#ff8a3d,#ff3d6e)}
+  /* list */
   .gl{list-style:none;margin:12px 0 0;padding:0}
   .gl li{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line)}
   .gl li:last-child{border-bottom:0}
   .gl .p{flex:1;font-family:ui-monospace,monospace;font-size:13px;word-break:break-all}
-  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:9}
+  .opt{display:flex;align-items:center;gap:11px;padding:12px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+  .opt:last-child{border-bottom:0}
+  .opt .r{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);flex:0 0 auto;display:flex;align-items:center;justify-content:center;transition:.15s}
+  .opt.sel .r{border-color:var(--acc)}
+  .opt.sel .r::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--acc)}
+  .opt .b{flex:1;min-width:0}
+  .opt .b b{display:block;font-size:14px;font-variant-numeric:tabular-nums}
+  .opt .b small{color:var(--dim);font-size:11px}
+  .opt.sel .b b{color:var(--acc)}
+  /* collapsible card header */
+  .cardhead{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
+  .cardhead h2{margin:0;flex:1}
+  .cardhead .count{font-size:11px;color:var(--dim);background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:2px 9px}
+  .chev{width:20px;height:20px;color:var(--dim);transition:transform .28s ease;flex:0 0 auto}
+  .card.open .chev{transform:rotate(180deg)}
+  .coll{max-height:0;overflow:hidden;transition:max-height .32s ease}
+  .coll.open{max-height:2200px}
+  /* cluster header */
+  .ci{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:#0f1622;border:1px solid var(--line);flex:0 0 auto}
+  .ci svg{width:17px;height:17px;color:var(--acc)}
+  .ct{flex:1;min-width:0;display:flex;flex-direction:column}
+  .ct b{font-size:14px;text-transform:uppercase;letter-spacing:.6px;color:#c7d2e4}
+  .ct small{color:var(--dim);font-size:11px}
+  .cardhead .cur{font-size:12px;font-weight:700;color:var(--acc);background:rgba(79,140,255,.12);border:1px solid rgba(79,140,255,.3);border-radius:999px;padding:3px 9px;font-variant-numeric:tabular-nums}
+  /* modal */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(3px);display:none;align-items:flex-end;justify-content:center;z-index:9}
   .modal.show{display:flex}
-  .sheet{background:var(--card);width:100%;max-width:720px;max-height:84vh;border-radius:18px 18px 0 0;padding:14px;overflow:auto}
+  .sheet{background:var(--card);width:100%;max-width:720px;max-height:84vh;border-radius:20px 20px 0 0;padding:16px;overflow:auto;border-top:1px solid var(--line)}
   .app{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line);cursor:pointer}
-  .app .ico{width:36px;height:36px;border-radius:9px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 auto}
+  .app .ico{width:36px;height:36px;border-radius:10px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 auto}
   .app .n{flex:1;min-width:0}
   .app .n b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .app .n small{color:var(--dim);font-size:11px;word-break:break-all}
-  .warn{background:#3a2a12;border:1px solid #6b4a17;color:#ffd591;padding:10px;border-radius:10px;font-size:12px;margin-bottom:12px}
-  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#000c;border:1px solid var(--line);color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;opacity:0;transition:.25s;z-index:20;pointer-events:none}
-  .toast.show{opacity:1}
+  .warn{background:var(--warnb);border:1px solid var(--warnl);color:var(--warnt);padding:10px;border-radius:12px;font-size:12px;margin-bottom:12px}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(10px);background:#000d;border:1px solid var(--line);color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;opacity:0;transition:.25s;z-index:20;pointer-events:none;backdrop-filter:blur(6px)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .foot{text-align:center;color:var(--dim);font-size:11px;margin-top:8px}
+  .hidden{display:none!important}
 </style>
 </head>
 <body>
-<h1>Cepheus Gaming Tweaks</h1>
-<div class="sub">Xiaomi Mi 9 &bull; pilih game, sisanya otomatis</div>
 
-<div id="noksu" class="warn" style="display:none">WebUI harus dibuka dari aplikasi KernelSU-Next (API <code>ksu</code> tidak terdeteksi).</div>
+<div class="top">
+  <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13l0-8Z"/></svg></div>
+  <div>
+    <h1>Cepheus Tweaks</h1>
+    <div class="sub">Xiaomi Mi 9 &bull; SM8150</div>
+  </div>
+  <div class="badge" id="verBadge">v3.5.0</div>
+</div>
+
+<div id="noksu" class="warn hidden" data-i18n="noksu"></div>
 
 <div class="card">
-  <h2>Daftar Game</h2>
-  <div class="hint">Modul aktif otomatis saat game di bawah ini dibuka (CPU/GPU dipacu maksimum). Kalau tidak ada yang dibuka, mode idle/hemat.</div>
-  <div class="row">
-    <input class="grow" id="addpkg" placeholder="nama paket, mis. com.tencent.ig" autocapitalize="none" autocorrect="off" spellcheck="false">
-    <button onclick="addGame()">Tambah</button>
+  <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="4"/></svg> <span data-i18n="modeTitle"></span></h2>
+  <div class="hint" id="modeHint"></div>
+  <div class="modes">
+    <div class="mode" data-m="global" id="modeGlobal" onclick="pickMode('global')">
+      <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.7 6 3.7 9s-1.2 6.4-3.7 9c-2.5-2.6-3.7-6-3.7-9S9.5 5.6 12 3Z"/></svg></div>
+      <b>Global</b>
+      <small data-i18n="globalDesc"></small>
+    </div>
+    <div class="mode" data-m="gaming" id="modeGaming" onclick="pickMode('gaming')">
+      <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="10" rx="4.5"/><path d="M6.5 10.5v2M5.5 11.5h2M15.5 11h.01M18 13.2h.01"/></svg></div>
+      <b>Gaming</b>
+      <small data-i18n="gamingDesc"></small>
+    </div>
   </div>
-  <div class="row" style="margin-top:8px">
-    <button class="ghost" style="flex:1" onclick="openPicker()">Pilih dari daftar aplikasi</button>
+</div>
+
+<div class="hint" style="margin:2px 4px 10px" id="cpuHint"></div>
+<div id="cpucards"></div>
+
+<div class="card" id="gamecard">
+  <div class="cardhead" onclick="toggleGames()">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg> <span data-i18n="gameTitle"></span></h2>
+    <span class="count" id="gcount">0</span>
+    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
   </div>
-  <ul class="gl" id="glist"></ul>
-  <div class="row" style="margin-top:12px">
-    <button onclick="saveGames()">Simpan</button>
-    <button class="ghost" onclick="clearGames()">Kosongkan</button>
+  <div class="coll" id="gamebody">
+    <div class="hint" style="margin-top:10px" data-i18n="gameHint"></div>
+    <div class="row">
+      <input class="grow" id="addpkg" data-i18n-ph="addPh" autocapitalize="none" autocorrect="off" spellcheck="false">
+      <button onclick="addGame()" data-i18n="addBtn"></button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="ghost" style="flex:1" onclick="openPicker()" data-i18n="pickerBtn"></button>
+    </div>
+    <ul class="gl" id="glist"></ul>
+    <div class="row" style="margin-top:12px">
+      <button onclick="saveGames()" data-i18n="saveBtn"></button>
+      <button class="ghost" onclick="clearGames()" data-i18n="clearBtn"></button>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="setcard">
+  <div class="cardhead" onclick="toggleSettings()">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 8.9 19a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg> <span data-i18n="setTitle"></span></h2>
+    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </div>
+  <div class="coll" id="setbody">
+    <div class="hint" style="margin-top:10px" data-i18n="setHint"></div>
+    <div class="hint" data-i18n="langHint" style="margin-bottom:4px"></div>
+    <ul class="gl" id="langlist"></ul>
   </div>
 </div>
 
 <div class="modal" id="modal">
   <div class="sheet">
     <div class="row">
-      <input class="grow" id="search" placeholder="cari app…" autocapitalize="none" autocorrect="off" spellcheck="false">
-      <button class="ghost" onclick="closePicker()">Tutup</button>
+      <input class="grow" id="search" data-i18n-ph="searchPh" autocapitalize="none" autocorrect="off" spellcheck="false">
+      <button class="ghost" onclick="closePicker()" data-i18n="closeBtn"></button>
     </div>
     <div class="row" id="quick" style="margin-top:8px;gap:6px"></div>
     <label class="hint" style="display:flex;align-items:center;gap:8px;margin:8px 2px 0">
-      <input type="checkbox" id="showsys" style="width:auto" onchange="loadApps(true)"> tampilkan aplikasi sistem
+      <input type="checkbox" id="showsys" style="width:auto" onchange="loadApps(true)"> <span data-i18n="showsys"></span>
     </label>
     <div id="appstatus" class="hint" style="margin:6px 2px 0"></div>
     <div id="applist" style="margin-top:6px"></div>
@@ -76,10 +181,11 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="foot" data-i18n="footer"></div>
 
 <script>
 /* ===================== ksu bridge ===================== */
-var DEF_DIR = "/data/adb/modules/cepheus-gaming-tweaks";
+var DEF_DIR = "/data/adb/modules/cepheus-tweaks";
 var MODDIR = DEF_DIR;
 function hasKsu(){ return typeof ksu !== 'undefined' && ksu; }
 /* PENTING: ksu.exec() sinkron (libsu fastCmd) hanya mengembalikan BARIS TERAKHIR.
@@ -98,44 +204,242 @@ function readLines(p){
   });
 }
 function b64(s){ return btoa(unescape(encodeURIComponent(s))); }
-function readFile(p){ return sh("cat '"+p+"' 2>/dev/null"); }
 function writeFile(p, c){ return sh("printf '%s' '"+b64(c)+"' | base64 -d > '"+p+"'"); }
-function reloadWorker(){ return sh("touch '"+MODDIR+"/.reload'").then(function(){ toast("Disimpan, diterapkan maks ~5 detik"); }); }
-function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(function(){ t.classList.remove('show'); }, 1900); }
+function reloadWorker(){ return sh("touch '"+MODDIR+"/.reload'").then(function(){ toast(t('toastSaved')); }); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
 function fileGamelist(){ return MODDIR + "/gamelist.txt"; }
+function fileConf(){ return MODDIR + "/tweak.conf"; }
+
+/* ===================== ikon ===================== */
+var IC = {
+  chip:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="10" rx="2.4"/><path d="M9.5 2.5v3M14.5 2.5v3M9.5 18.5v3M14.5 18.5v3M2.5 9.5h3M2.5 14.5h3M18.5 9.5h3M18.5 14.5h3"/></svg>'
+};
+
+/* ===================== bahasa (i18n) ===================== */
+var LANG = lsGet('cg_lang') || 'id';
+var T = {
+  modeTitle:{id:'Mode',en:'Mode'},
+  modeHintGlobal:{id:'Mode Global hanya menerapkan batas frekuensi maksimum CPU, dan berlaku secara berkelanjutan (siaga maupun saat bermain game). Fitur lain dinonaktifkan.',
+                  en:'Global mode applies only the maximum CPU frequency caps, and does so continuously (standby as well as while gaming). All other features are disabled.'},
+  modeHintGaming:{id:'Mode Gaming mengaktifkan seluruh fitur secara otomatis ketika aplikasi game berjalan di latar depan.',
+                  en:'Gaming mode enables every feature automatically whenever a game app is brought to the foreground.'},
+  globalDesc:{id:'Batas frekuensi CPU yang berlaku terus-menerus',en:'Always-on CPU frequency caps'},
+  gamingDesc:{id:'Profil performa lengkap, aktif saat game',en:'Full performance profile while gaming'},
+  cpuHintGlobal:{id:'Pilih batas frekuensi maksimum untuk masing-masing cluster CPU. Batas ini diterapkan terus-menerus untuk menjaga suhu dan memperpanjang daya tahan baterai.',
+                 en:'Choose the maximum frequency cap for each CPU cluster. The cap is applied continuously to manage thermals and extend battery life.'},
+  cpuHintGaming:{id:'Pilih batas frekuensi maksimum untuk masing-masing cluster CPU saat bermain game. Menurunkan batas sering kali justru meningkatkan performa jangka panjang, karena mekanisme thermal throttle aktif lebih lambat.',
+                 en:'Choose the maximum frequency cap for each CPU cluster while gaming. Lowering the cap frequently improves sustained performance, as thermal throttling engages later.'},
+  setTitle:{id:'Pengaturan',en:'Settings'},
+  setHint:{id:'Preferensi tampilan WebUI.',en:'WebUI display preferences.'},
+  langHint:{id:'Bahasa tampilan antarmuka WebUI.',en:'Language used across the WebUI interface.'},
+  langIdDesc:{id:'Teks antarmuka berbahasa Indonesia.',en:'Interface text in Indonesian.'},
+  langEnDesc:{id:'Teks antarmuka berbahasa Inggris.',en:'Interface text in English.'},
+  gameTitle:{id:'Daftar Game',en:'Game List'},
+  gameHint:{id:'Aplikasi yang terdaftar akan memicu profil performa otomatis saat berjalan di latar depan. Ketika tidak ada game aktif, sistem kembali ke profil hemat daya.',
+            en:'Registered apps trigger the performance profile automatically when brought to the foreground. When no game is running, the system returns to the power-saving profile.'},
+  addPh:{id:'nama paket, mis. com.tencent.ig',en:'package name, e.g. com.tencent.ig'},
+  addBtn:{id:'Tambah',en:'Add'},
+  pickerBtn:{id:'Pilih dari daftar aplikasi',en:'Pick from installed apps'},
+  saveBtn:{id:'Simpan',en:'Save'},
+  clearBtn:{id:'Kosongkan',en:'Clear'},
+  removeBtn:{id:'Hapus',en:'Remove'},
+  searchPh:{id:'cari aplikasi…',en:'search apps…'},
+  closeBtn:{id:'Tutup',en:'Close'},
+  showsys:{id:'tampilkan aplikasi sistem',en:'show system apps'},
+  loading:{id:'memuat…',en:'loading…'},
+  loadingApps:{id:'memuat aplikasi…',en:'loading apps…'},
+  loadingSys:{id:'memuat aplikasi sistem…',en:'loading system apps…'},
+  noneApps:{id:'tidak ada',en:'none'},
+  emptyGames:{id:'(belum ada game — tambahkan)',en:'(no games yet — add some)'},
+  freqMax:{id:'Maksimum (stok)',en:'Maximum (stock)'},
+  freqMin:{id:'Minimum',en:'Minimum'},
+  footer:{id:'Cepheus Tweaks • KernelSU-Next',en:'Cepheus Tweaks • KernelSU-Next'},
+  noksu:{id:'WebUI harus dibuka dari aplikasi KernelSU-Next (API ksu tidak terdeteksi).',
+         en:'This WebUI must be opened from the KernelSU-Next app (ksu API not detected).'},
+  toastSaved:{id:'Disimpan, diterapkan maks ~5 detik',en:'Saved, applied within ~5 s'},
+  toastExists:{id:'Sudah ada di daftar',en:'Already in the list'},
+  toastInvalid:{id:'Nama paket tidak valid',en:'Invalid package name'},
+  toastLang:{id:'Bahasa diperbarui',en:'Language updated'}
+};
+function t(k){ var e=T[k]; return e ? (e[LANG] || e.id) : k; }
+function tNum(k,n){ return LANG==='id' ? (n+' aplikasi ('+k+')') : (n+' apps ('+k+')'); }
+function ghz(v){ return (Number(v)/1000000).toFixed(3).replace(/0$/,'') + ' GHz'; }
+
+/* terapkan teks statis (elemen ber-attribute data-i18n) */
+function applyI18n(){
+  var e = document.querySelectorAll('[data-i18n]');
+  for (var i=0;i<e.length;i++){ e[i].textContent = t(e[i].getAttribute('data-i18n')); }
+  var p = document.querySelectorAll('[data-i18n-ph]');
+  for (var j=0;j<p.length;j++){ p[j].placeholder = t(p[j].getAttribute('data-i18n-ph')); }
+}
+function refreshTexts(){ applyI18n(); setModeUI(); renderCpu(); renderGames(); renderQuick(); renderApps(); renderLangs(); }
 
 /* ===================== state ===================== */
-var state = { games:[], apps:null };
+var state = { games:[], apps:null, mode:'gaming', cpu:{} };
 
-function parseGames(text){
-  return text.split('\n').map(function(l){return l.trim();}).filter(function(l){ return l && l[0]!=='#'; });
+/* ===================== mode (global / gaming) ===================== */
+function setModeUI(){
+  var g = document.getElementById('modeGlobal'), m = document.getElementById('modeGaming');
+  if (g) g.classList.toggle('sel', state.mode==='global');
+  if (m) m.classList.toggle('sel', state.mode==='gaming');
+  var gc = document.getElementById('gamecard');
+  if (gc) gc.classList.toggle('hidden', state.mode!=='gaming');
+  var mh = document.getElementById('modeHint');
+  if (mh) mh.textContent = state.mode==='global' ? t('modeHintGlobal') : t('modeHintGaming');
+  var ch = document.getElementById('cpuHint');
+  if (ch) ch.textContent = state.mode==='global' ? t('cpuHintGlobal') : t('cpuHintGaming');
+}
+function pickMode(m){
+  if (m!=='global' && m!=='gaming') return;
+  if (state.mode===m){ setModeUI(); return; }
+  state.mode = m; setModeUI();
+  var pairs = {}; pairs.MODE = m;
+  confSetMany(pairs).then(function(){ return reloadWorker(); });
+}
+
+/* ===================== pengaturan: bahasa ===================== */
+function renderLangs(){
+  var ul = document.getElementById('langlist'); if (!ul) return;
+  var langs = [
+    {v:'id', name:'Bahasa Indonesia', desc:t('langIdDesc')},
+    {v:'en', name:'English', desc:t('langEnDesc')}
+  ];
+  ul.innerHTML = langs.map(function(l){
+    var s = (LANG===l.v) ? ' sel' : '';
+    return '<li class="opt'+s+'" onclick="setLang(\''+l.v+'\')">'+
+      '<span class="r"></span><span class="b"><b>'+esc(l.name)+'</b><small>'+esc(l.desc)+'</small></span></li>';
+  }).join('');
+}
+function setLang(l){
+  if (l!=='id' && l!=='en') return;
+  LANG = l; lsSet('cg_lang', l);
+  refreshTexts();
+  toast(t('toastLang'));
+}
+function toggleSettings(){
+  var card = document.getElementById('setcard'), body = document.getElementById('setbody');
+  var open = card.classList.toggle('open');
+  if (body) body.classList.toggle('open', open);
+  lsSet('cg_set_open', open ? '1' : '0');
 }
 
 /* ===================== daftar game ===================== */
+function toggleGames(){
+  var card = document.getElementById('gamecard'), body = document.getElementById('gamebody');
+  var open = card.classList.toggle('open');
+  if (body) body.classList.toggle('open', open);
+  lsSet('cg_games_open', open ? '1' : '0');
+}
 function renderGames(){
   var ul = document.getElementById('glist');
-  ul.innerHTML = state.games.length
-    ? state.games.map(function(p,i){ return '<li><span class="p">'+esc(p)+'</span><button class="danger" onclick="rmGame('+i+')">Hapus</button></li>'; }).join('')
-    : '<li><span class="p" style="color:var(--dim)">(belum ada game — tambahkan)</span></li>';
+  if (ul) ul.innerHTML = state.games.length
+    ? state.games.map(function(p,i){ return '<li><span class="p">'+esc(p)+'</span><button class="danger" onclick="rmGame('+i+')">'+t('removeBtn')+'</button></li>'; }).join('')
+    : '<li><span class="p" style="color:var(--dim)">'+t('emptyGames')+'</span></li>';
+  var c = document.getElementById('gcount'); if (c) c.textContent = state.games.length;
 }
 function addGame(){ var i=document.getElementById('addpkg'); addPkg(i.value.trim()); i.value=''; }
 function addPkg(p){
   if (!p) return;
-  if (!/^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)+$/.test(p)){ toast('Nama paket tidak valid'); return; }
-  if (state.games.indexOf(p)>=0){ toast('Sudah ada'); return; }
+  if (!/^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)+$/.test(p)){ toast(t('toastInvalid')); return; }
+  if (state.games.indexOf(p)>=0){ toast(t('toastExists')); return; }
   state.games.push(p); state.games.sort(); renderGames();
   saveGames();
 }
 function rmGame(i){ state.games.splice(i,1); renderGames(); saveGames(); }
 function clearGames(){ state.games=[]; renderGames(); saveGames(); }
 function gamesText(){
-  return "# Cepheus Gaming Tweaks - daftar game (dikelola WebUI)\n"+
+  return "# Cepheus Tweaks - daftar game (dikelola WebUI)\n"+
          "# Satu nama paket per baris. Modul aktif saat app ini di foreground.\n\n"+
          state.games.join('\n') + (state.games.length?'\n':'');
 }
 function saveGames(){
   return writeFile(fileGamelist(), gamesText()).then(function(){ return reloadWorker(); });
+}
+
+/* ===================== profil CPU (per cluster, semua frekuensi) ===================== */
+var CPU_CLUSTERS = [
+  {key:"LITTLE_MAX", title:"Little", subId:"core 0-3", subEn:"cores 0-3", policy:"policy0", dflt:"1785600", opts:[]},
+  {key:"MID_MAX",    title:"Mid",    subId:"core 4-6", subEn:"cores 4-6", policy:"policy4", dflt:"2419200", opts:[]},
+  {key:"PRIME_MAX",  title:"Prime",  subId:"core 7",   subEn:"cores 7",   policy:"policy7", dflt:"2841600", opts:[]}
+];
+/* fallback bila node tidak terbaca: daftar langkah frekuensi sesuai perangkat */
+var FALLBACK_OPTS = [
+  ['1785600','1708800','1632000','1555200','1478400','1382400','1305600','1209600','1113600','1036800','940800','844800','768000','672000','576000','499200','403200','300000'],
+  ['2419200','2323200','2227200','2131200','2016000','1920000','1804800','1708800','1612800','1497600','1401600','1286400','1171200','1056000','940800','825600','710400'],
+  ['2841600','2745600','2649600','2534400','2419200','2323200','2227200','2131200','2016000','1920000','1804800','1708800','1612800','1497600','1401600','1286400','1171200','1056000','940800','825600']
+];
+/* baca SEMUA frekuensi yang tersedia dari kernel (scaling_available_frequencies).
+   ksu.exec() sync hanya mengembalikan baris terakhir -> file ini 1 baris, aman. */
+async function loadFreqs(){
+  for (var i=0;i<CPU_CLUSTERS.length;i++){
+    var c = CPU_CLUSTERS[i], arr = [];
+    try{
+      var s = await sh("cat /sys/devices/system/cpu/cpufreq/"+c.policy+"/scaling_available_frequencies 2>/dev/null");
+      arr = String(s).trim().split(/\s+/).filter(function(x){ return /^\d+$/.test(x); });
+    }catch(e){}
+    if (!arr.length) arr = FALLBACK_OPTS[i].slice();
+    arr.sort(function(a,b){ return Number(b)-Number(a); });   // tertinggi dulu
+    var mx = arr[0], mn = arr[arr.length-1];
+    c.opts = arr.map(function(v){ return { v:v, tag:(v===mx?'max':(v===mn?'min':'')) }; });
+  }
+}
+function confGet(text, key, dflt){
+  var pre = key + "=", lines = String(text).split('\n');
+  for (var i=0;i<lines.length;i++){ if (lines[i].indexOf(pre)===0) return lines[i].slice(pre.length).trim(); }
+  return dflt;
+}
+function confSetMany(pairs){
+  return readLines(fileConf()).then(function(lines){
+    Object.keys(pairs).forEach(function(key){
+      var pre = key + "=", found = false;
+      for (var i=0;i<lines.length;i++){ if (lines[i].indexOf(pre)===0){ lines[i] = pre + pairs[key]; found = true; break; } }
+      if (!found){
+        var last = lines.length - 1;
+        if (lines[last] === ""){ lines[last] = pre + pairs[key]; lines.push(""); } else { lines.push(pre + pairs[key]); }
+      }
+    });
+    return writeFile(fileConf(), lines.join("\n"));
+  });
+}
+function toggleCluster(k){
+  var card = document.getElementById('card_'+k), coll = document.getElementById('coll_'+k);
+  if (!card) return;
+  var open = !card.classList.contains('open');
+  card.classList.toggle('open', open);
+  if (coll) coll.classList.toggle('open', open);
+  lsSet('cg_clu_'+k, open ? '1' : '0');
+}
+function renderCpu(){
+  var host = document.getElementById('cpucards'); if (!host) return;
+  host.innerHTML = CPU_CLUSTERS.map(function(c, ci){
+    var sel = state.cpu[c.key] || c.dflt;
+    var open = lsGet('cg_clu_'+c.key)==='1';
+    var sub = (LANG==='id') ? c.subId : c.subEn;
+    var opts = c.opts.map(function(o){
+      var s = (String(o.v) === String(sel)) ? ' sel' : '';
+      var tag = o.tag==='max' ? t('freqMax') : (o.tag==='min' ? t('freqMin') : '');
+      return '<li class="opt'+s+'" onclick="pickCluster('+ci+',\''+o.v+'\')">'+
+        '<span class="r"></span>'+
+        '<span class="b"><b>'+ghz(o.v)+'</b>'+(tag?'<small>'+esc(tag)+'</small>':'')+'</span></li>';
+    }).join('');
+    return '<div class="card'+(open?' open':'')+'" id="card_'+c.key+'">'+
+      '<div class="cardhead" onclick="toggleCluster(\''+c.key+'\')">'+
+        '<span class="ci">'+IC.chip+'</span>'+
+        '<span class="ct"><b>'+esc(c.title)+'</b><small>'+esc(sub)+'</small></span>'+
+        '<span class="cur">'+esc(ghz(sel))+'</span>'+
+        '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>'+
+      '</div>'+
+      '<div class="coll'+(open?' open':'')+'" id="coll_'+c.key+'"><ul class="gl">'+opts+'</ul></div>'+
+    '</div>';
+  }).join('');
+}
+function pickCluster(ci, v){
+  var c = CPU_CLUSTERS[ci]; if (!c) return;
+  state.cpu[c.key] = v; renderCpu();
+  var pairs = {}; pairs[c.key] = v;
+  confSetMany(pairs).then(function(){ return reloadWorker(); });
 }
 
 /* ===================== app picker ===================== */
@@ -152,7 +456,7 @@ var QUICK = [
 ];
 function openPicker(){ document.getElementById('modal').classList.add('show'); renderQuick(); loadApps(); }
 function closePicker(){ document.getElementById('modal').classList.remove('show'); }
-function setStatus(t){ var e=document.getElementById('appstatus'); if (e) e.textContent = t || ''; }
+function setStatus(txt){ var e=document.getElementById('appstatus'); if (e) e.textContent = txt || ''; }
 function jarr(s){ try{ var v = JSON.parse(s); return (v && v.length) ? v : []; }catch(e){ return []; } }
 function norm(s){ return String(s==null?'':s).replace(/^package:/,'').trim(); }
 function validPkg(p){ return /^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*$/.test(p); }
@@ -167,8 +471,6 @@ function renderQuick(){
     return '<button class="ghost" style="font-size:12px;padding:6px 10px" onclick="pick(\''+g[1]+'\')">'+esc(g[0])+'</button>';
   }).join('');
 }
-
-/* daftar app: pakai API bawaan ksu.listPackages (JSON, tanpa shell) */
 function fromKsu(type){
   try{ if (hasKsu() && typeof ksu.listPackages === 'function') return jarr(ksu.listPackages(type)).map(norm).filter(validPkg); }catch(e){}
   return [];
@@ -185,19 +487,17 @@ async function loadSysApps(){
   for (var i = 0; i < 4 && !a.length; i++){ await wait(300); a = fromKsu("system"); }
   return a;
 }
-
 async function loadApps(force){
   if (state.apps && !force){ renderApps(); return; }
   state.apps = [];
-  document.getElementById('applist').innerHTML = '<div style="color:var(--dim);padding:10px">memuat…</div>';
+  document.getElementById('applist').innerHTML = '<div style="color:var(--dim);padding:10px">'+t('loading')+'</div>';
   var showSys = document.getElementById('showsys') && document.getElementById('showsys').checked;
-  setStatus(showSys ? 'memuat app…' : '');
+  setStatus(showSys ? t('loadingApps') : '');
   var user = [], sys = [];
   try{ user = await loadUserApps(); }catch(e){}
-  if (showSys){ setStatus('memuat app sistem…'); try{ sys = await loadSysApps(); }catch(e){} }
+  if (showSys){ setStatus(t('loadingSys')); try{ sys = await loadSysApps(); }catch(e){} }
   var seen = {}, pkgs = [];
   user.concat(sys).forEach(function(p){ if (p && !seen[p]){ seen[p] = 1; pkgs.push(p); } });
-  /* label + status sistem (per-batch agar tidak berat) */
   var names = {}, sysmap = {};
   if (hasKsu() && ksu.getPackagesInfo){
     for (var i = 0; i < pkgs.length; i += 60){
@@ -210,33 +510,49 @@ async function loadApps(force){
   }
   state.apps = pkgs.map(function(p){ return {p:p, n:names[p]||p, u:!sysmap[p]}; })
     .sort(function(a,b){ return String(a.n||a.p).localeCompare(String(b.n||b.p)); });
-  setStatus(pkgs.length + ' aplikasi' + (showSys ? ' (termasuk sistem)' : ' (terpasang)'));
+  setStatus(pkgs.length + (showSys ? (LANG==='id'?' aplikasi (termasuk sistem)':' apps (incl. system)')
+                                   : (LANG==='id'?' aplikasi (terpasang)':' apps (installed)')));
   renderApps();
 }
 function renderApps(){
+  var el = document.getElementById('applist'); if (!el) return;
   var q = (document.getElementById('search').value||'').toLowerCase();
   var list = (state.apps||[]).filter(function(a){
     var n = String(a.n||a.p).toLowerCase(), p = String(a.p||'').toLowerCase();
     return !q || n.indexOf(q) >= 0 || p.indexOf(q) >= 0;
   });
-  document.getElementById('applist').innerHTML = list.slice(0,1000).map(function(a){
+  el.innerHTML = list.slice(0,1000).map(function(a){
     var ini = String(a.n||a.p).slice(0,1).toUpperCase();
     return '<div class="app" onclick="pick(\''+a.p+'\')">'+
       '<div class="ico">'+esc(ini)+'</div>'+
-      '<div class="n"><b>'+esc(a.n)+'</b><small>'+esc(a.p)+(a.u?'':' • sistem')+'</small></div></div>';
-  }).join('') || '<div style="color:var(--dim);padding:10px">tidak ada</div>';
+      '<div class="n"><b>'+esc(a.n)+'</b><small>'+esc(a.p)+(a.u?'':' • '+t('showsys'))+'</small></div></div>';
+  }).join('') || '<div style="color:var(--dim);padding:10px">'+t('noneApps')+'</div>';
 }
-function pick(p){ addPkg(p); toast('Ditambah: '+p); closePicker(); }
-
-async function saveRawNoop(){}
+function toast(m){ var el=document.getElementById('toast'); el.textContent=m; el.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(function(){ el.classList.remove('show'); }, 1900); }
+function pick(p){ addPkg(p); toast((LANG==='id'?'Ditambah: ':'Added: ')+p); closePicker(); }
 
 /* ===================== boot ===================== */
+async function loadAll(){
+  var txt = "";
+  try{ txt = (await readLines(fileConf())).join('\n'); }catch(e){}
+  state.mode = confGet(txt, "MODE", "gaming");
+  if (state.mode !== "global" && state.mode !== "gaming") state.mode = "gaming";
+  state.cpu = {};
+  await loadFreqs();
+  CPU_CLUSTERS.forEach(function(c){ state.cpu[c.key] = confGet(txt, c.key, c.dflt); });
+  setModeUI(); renderCpu(); renderLangs();
+}
 async function boot(){
-  if (!hasKsu()) document.getElementById('noksu').style.display='block';
+  applyI18n();
+  if (!hasKsu()) document.getElementById('noksu').classList.remove('hidden');
   try{ if (hasKsu() && ksu.moduleInfo){ var inf=JSON.parse(ksu.moduleInfo()); if(inf&&inf.moduleDir) MODDIR=inf.moduleDir; } }catch(e){}
   document.getElementById('search').addEventListener('input', renderApps);
   var lines = await readLines(fileGamelist());
-  state.games = parseGames(lines.join('\n')); renderGames();
+  state.games = (function(text){ return text.split('\n').map(function(l){return l.trim();}).filter(function(l){ return l && l[0]!=='#'; }); })(lines.join('\n'));
+  renderGames();
+  if (lsGet('cg_games_open')==='1'){ document.getElementById('gamecard').classList.add('open'); document.getElementById('gamebody').classList.add('open'); }
+  if (lsGet('cg_set_open')==='1'){ document.getElementById('setcard').classList.add('open'); document.getElementById('setbody').classList.add('open'); }
+  await loadAll();
 }
 boot();
 </script>
