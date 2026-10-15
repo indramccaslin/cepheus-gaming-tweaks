@@ -1,0 +1,37 @@
+# Cepheus Gaming Tweaks - daftar game (standalone)
+# Satu nama paket per baris. Modul aktif saat app ini di foreground.
+# Cara termudah: buka WebUI modul di KernelSU-Next Manager (tombol "WebUI"),
+# tambah/hapus game dari daftar app, lalu "Simpan & Terapkan" (tanpa reboot).
+# Atau edit manual di sini, lalu (dari WebUI) tekan "Terapkan ulang".
+# (Baris diawali '#' diabaikan.)
+
+# --- PUBG Mobile ---
+com.tencent.ig
+com.pubg.imobile
+com.pubg.krmobile
+com.rekoo.pubgm
+com.vng.pubgmobile
+
+# --- FPS / battle royale ---
+com.activision.callofduty.shooter
+com.garena.game.codm
+com.dts.freefireth
+com.dts.freefiremax
+com.epicgames.fortnite
+com.riotgames.league.wildrift
+com.garena.game.kgth
+
+# --- MOBA ---
+com.mobile.legends
+com.mojang.minecraftpe
+
+# --- Gacha / RPG ---
+com.miHoYo.GenshinImpact
+com.miHoYo.hkrpg
+com.HoYoverse.hkrpgoversea
+com.HoYoverse.Nap
+
+# --- Lain / benchmark ---
+com.supercell.clashofclans
+com.supercell.clashroyale
+skynet.cputhrottlingtest

@@ -1,90 +1,93 @@
-# Cepheus Game Booster
+# Cepheus Gaming Tweaks
 
-A **KernelSU / Magisk** module for smooth game FPS on **Xiaomi Mi 9 (cepheus, sm8150)**.
+A **standalone** KernelSU-Next (and Magisk) module that automatically locks the **CPU and GPU to maximum performance while a game is in the foreground** — stable 60 fps and anti frame-drop — for the **Xiaomi Mi 9 (cepheus, sm8150)**. Outside games the system runs normally (no Encore Tweaks or other daemon required).
 
-It bundles a thermal throttle release with GPU/I/O/VM tweaks in a single module, and
-**all heavy tweaks only run while a game is in the foreground**. Outside games, the
-system runs normally.
+It ships with a **WebUI** (KernelSU-Next Manager) to manage the game list.
 
 ## Features
 
-- **In-game thermal throttle release** — `mi_thermald` (Xiaomi's userspace thermal
-  daemon) caps the big/prime cores to ~1.28–1.49 GHz once the skin temp
-  (`quiet_therm`) reaches 44–48 °C. This module pauses that daemon during games, so
-  the CPU is freed again (2.42 / 2.84 GHz) and FPS stops dropping during heavy
-  fights.
-- **Dynamic GPU floor** — raises the GPU floor during games for steadier frame
-  pacing.
-- **I/O `deadline`** + **VM tuning** (vfs_cache_pressure, dirty_writeback).
-- **Safe alongside Encore Tweaks** — Encore still owns CPU governor/cpufreq/
-  schedtune; this module never touches them. Game state is read read-only from
-  Encore.
+- **Automatic game/idle profiles** — detects the foreground game (~2 s) and switches profiles.
+- **CPU max lock** — all clusters → `performance` governor, plus `scaling_min_freq = scaling_max_freq = cpuinfo_max_freq`.
+- **GPU lock** — pinned at **770 MHz** (`min_freq = max_freq = max_gpuclk`, `min_pwrlevel = 0`).
+- **Thermal unlock** — stops `mi_thermald` and opens `thermal_message/cpu_limits` + the GPU cooling clamp during games; restored on idle. Kernel emergency protection (BCL, `*-step` zones, LMH) stays active.
+- **Bypass charging** — while gaming the phone runs off the adapter (battery `current_now ≈ 0`, cooler).
+- **Scheduler / input boost / schedtune** tuning for steadier frame pacing.
+- **Boot-safe** — runs from `service.sh` with a boot-count failsafe (auto-disables after repeated failed boots).
 
-## How the thermal release works
+## Requirements
 
-1. When a game is active:
-   - `kill -STOP` the thermal daemon (`THERMAL_DAEMONS`, default `mi_thermald`).
-   - Reset `cooling_device` (`thermal-cpufreq-*`, `thermal-devfreq-*`) to 0.
-   - Open the CPU `scaling_max_freq` clamp back to `cpuinfo_max_freq`.
-2. When the game is closed: `kill -CONT` → normal thermal again.
-3. Guard: if the daemon is restarted by the system during a game, it is paused
-   again automatically.
+- Xiaomi Mi 9 — `cepheus` / `sm8150`.
+- KernelSU-Next (3.4.x) or Magisk.
+- A kernel exposing the `thermal_message`, `kgsl` and `msm_performance` nodes (the stock Xiaomi kernel does).
 
-> **Kernel** protection stays active (lmh-dcvs ~85 °C, pop-mem/cpu-step 95–110 °C,
-> thermal HAL). Extreme heat is still handled by the kernel; only the "mild heat"
-> limit (44–48 °C) from userspace is released during games.
+## Install
 
-## Installation
-
-KernelSU Next / KernelSU Manager:
 1. Download `cepheus-gaming-tweaks-vX.Y.Z.zip` from [Releases](../../releases).
-2. Open KernelSU Manager → Modules → Install from storage → pick the zip.
+2. KernelSU-Next / Magisk Manager → **Modules** → **Install from storage** → pick the zip.
 3. Reboot.
 
-Or drop the module folder directly into `/data/adb/modules/cepheus-gaming-tweaks/`.
+The module also exposes `update.json` so the manager can check for updates.
+
+## Usage (WebUI)
+
+Manager → **Modules** → **Cepheus Gaming Tweaks** → **WebUI**:
+
+- **Daftar Game** — add/remove packages. Type the package name manually or tap
+  **Pilih dari daftar aplikasi** to pick from the installed apps.
+- **Simpan** (Save) writes `gamelist.txt` and signals the worker; it reloads
+  within ~5 s — **no reboot needed**.
 
 ## Configuration
 
-Edit `/data/adb/modules/cepheus-gaming-tweaks/tweak.conf` then reboot.
+Everything lives in `/data/adb/modules/cepheus-gaming-tweaks/tweak.conf` (also editable from the WebUI):
 
 | Key | Default | Description |
 |---|---|---|
-| `GP_THERMAL` | `true` | Release thermal throttling during games |
-| `GP_GPU` | `true` | Dynamic GPU floor |
-| `GP_IO` | `true` | I/O scheduler |
-| `GP_VM` | `true` | VM tuning |
-| `GP_DYNAMIC` | `true` | `false` = apply statically (no game detection) |
-| `THERMAL_DAEMONS` | `mi_thermald` | Daemon(s) to pause (space-separated) |
-| `GPU_GAME_PWRLEVEL` | `4` | GPU floor during games (lower = higher clock) |
-| `GPU_IDLE_PWRLEVEL` | `6` | GPU floor when idle |
+| `GP_CPU` / `GP_GPU` / `GP_IO` / `GP_VM` / `GP_NET` / `GP_KERNEL` | `true` | Master switches per subsystem |
+| `GP_DYNAMIC` | `true` | `false` = apply the game profile permanently (not recommended) |
+| `GP_POLL` | `2` | Game-detection interval (seconds) |
+| `CPU_GAME_GOV` / `CPU_IDLE_GOV` | `performance` / `schedutil` | CPU governor for game / idle |
+| `CPU_LOCK_MAX` | `true` | Pin `scaling_min = scaling_max = max` during games |
+| `GPU_GAME_PWRLEVEL` / `GPU_IDLE_PWRLEVEL` | `0` / `6` | GPU power level (`0` = max clock) |
+| `GPU_GAME_GOV` / `GPU_IDLE_GOV` | `performance` / `msm-adreno-tz` | GPU governor |
+| `GPU_GAME_LOCK` | `true` | Lock GPU at 770 MHz during games |
+| `GPU_FORCE_CLK` / `GPU_IDLE_TIMER` | `1` / `200` | Hold the max rail / idle timer |
+| `THERMAL_UNLOCK` | `true` | Stop userspace thermal daemons during games |
+| `GP_BYPASS_CHARGE` | `true` | Bypass charging during games |
+
+(`min_pwrlevel`: lower number = higher clock.)
 
 ## Verify
 
 While a game is running:
-```sh
-su -c 'awk "{print \$3}" /proc/$(pidof mi_thermald)/stat'             # T = paused
-su -c 'cat /sys/devices/system/cpu/cpufreq/policy7/scaling_max_freq'  # 2841600
-```
-After the game is closed, the daemon returns to `S` (normal thermal).
-
-Log: `/data/adb/modules/cepheus-gaming-tweaks/tweak.log`
-
-## Requirements
-
-- Xiaomi Mi 9 (cepheus / sm8150) with KernelSU/Magisk.
-- Optional: [Encore Tweaks](https://github.com/Rem01Gaming/encore) for game
-  detection & CPU tuning (this module reads game state from Encore).
-
-## Build
 
 ```sh
-sh build.sh   # produces cepheus-gaming-tweaks-vX.Y.Z.zip
+# CPU governor (expect "performance" on every cluster)
+for p in 0 4 7; do cat /sys/devices/system/cpu/cpufreq/policy$p/scaling_governor; done
+
+# GPU (expect 770000000)
+cat /sys/class/kgsl/kgsl-3d0/devfreq/cur_freq
+
+# thermal daemon paused ("T") + GPU cooling released (tp=0)
+awk '{print $3}' /proc/$(pidof mi_thermald)/stat
+cat /sys/class/kgsl/kgsl-3d0/thermal_pwrlevel
 ```
 
-## Disclaimer
+Log: `/data/adb/modules/cepheus-gaming-tweaks/tweak.log`.
 
-Use at your own risk. Releasing thermal throttling during games makes the device
-run hotter than usual. Avoid long gaming sessions while charging.
+## Disable / Uninstall
+
+- Temporarily disable: create `/data/adb/modules/cepheus-gaming-tweaks/disable`.
+- Uninstall: remove the folder (or via the manager). `uninstall.sh` restores the
+  governor, GPU, scheduler and restarts the thermal daemons.
+
+## Notes
+
+- Thermal unlock removes Xiaomi's userspace limit during games, so the phone gets
+  **hotter** and drains faster. Kernel protections remain, but avoid long gaming
+  sessions while charging.
+- If it gets too hot, set `THERMAL_UNLOCK=false` and/or raise
+  `GPU_GAME_PWRLEVEL`.
 
 ## License
 

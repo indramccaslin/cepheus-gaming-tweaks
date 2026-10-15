@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cepheus Gaming Tweaks</title>
+<style>
+  :root{--bg:#0e1116;--card:#171c24;--card2:#1e242e;--line:#2a3240;--txt:#e6ebf2;--dim:#8b97a8;--acc:#4f8cff;--ok:#37c98b;--err:#ff5c6c}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.55 system-ui,-apple-system,Roboto,sans-serif;padding:14px 14px 48px;max-width:720px;margin:0 auto}
+  h1{font-size:18px;margin:2px 0 2px}
+  .sub{color:var(--dim);font-size:12px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+  .card h2{font-size:15px;margin:0 0 6px}
+  .hint{color:var(--dim);font-size:12px;margin-bottom:12px}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  .grow{flex:1;min-width:140px}
+  input{width:100%;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
+  button{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:10px 15px;font:inherit;font-weight:600}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--txt);font-weight:500}
+  button.danger{background:transparent;border:1px solid var(--err);color:var(--err);padding:8px 12px}
+  button:active{transform:scale(.98)}
+  .gl{list-style:none;margin:12px 0 0;padding:0}
+  .gl li{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line)}
+  .gl li:last-child{border-bottom:0}
+  .gl .p{flex:1;font-family:ui-monospace,monospace;font-size:13px;word-break:break-all}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:9}
+  .modal.show{display:flex}
+  .sheet{background:var(--card);width:100%;max-width:720px;max-height:84vh;border-radius:18px 18px 0 0;padding:14px;overflow:auto}
+  .app{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+  .app .ico{width:36px;height:36px;border-radius:9px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 auto}
+  .app .n{flex:1;min-width:0}
+  .app .n b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .app .n small{color:var(--dim);font-size:11px;word-break:break-all}
+  .warn{background:#3a2a12;border:1px solid #6b4a17;color:#ffd591;padding:10px;border-radius:10px;font-size:12px;margin-bottom:12px}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#000c;border:1px solid var(--line);color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;opacity:0;transition:.25s;z-index:20;pointer-events:none}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<h1>Cepheus Gaming Tweaks</h1>
+<div class="sub">Xiaomi Mi 9 &bull; pilih game, sisanya otomatis</div>
+
+<div id="noksu" class="warn" style="display:none">WebUI harus dibuka dari aplikasi KernelSU-Next (API <code>ksu</code> tidak terdeteksi).</div>
+
+<div class="card">
+  <h2>Daftar Game</h2>
+  <div class="hint">Modul aktif otomatis saat game di bawah ini dibuka (CPU/GPU dipacu maksimum). Kalau tidak ada yang dibuka, mode idle/hemat.</div>
+  <div class="row">
+    <input class="grow" id="addpkg" placeholder="nama paket, mis. com.tencent.ig" autocapitalize="none" autocorrect="off" spellcheck="false">
+    <button onclick="addGame()">Tambah</button>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <button class="ghost" style="flex:1" onclick="openPicker()">Pilih dari daftar aplikasi</button>
+  </div>
+  <ul class="gl" id="glist"></ul>
+  <div class="row" style="margin-top:12px">
+    <button onclick="saveGames()">Simpan</button>
+    <button class="ghost" onclick="clearGames()">Kosongkan</button>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="sheet">
+    <div class="row">
+      <input class="grow" id="search" placeholder="cari app…" autocapitalize="none" autocorrect="off" spellcheck="false">
+      <button class="ghost" onclick="closePicker()">Tutup</button>
+    </div>
+    <div class="row" id="quick" style="margin-top:8px;gap:6px"></div>
+    <label class="hint" style="display:flex;align-items:center;gap:8px;margin:8px 2px 0">
+      <input type="checkbox" id="showsys" style="width:auto" onchange="loadApps(true)"> tampilkan aplikasi sistem
+    </label>
+    <div id="appstatus" class="hint" style="margin:6px 2px 0"></div>
+    <div id="applist" style="margin-top:6px"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================== ksu bridge ===================== */
+var DEF_DIR = "/data/adb/modules/cepheus-gaming-tweaks";
+var MODDIR = DEF_DIR;
+function hasKsu(){ return typeof ksu !== 'undefined' && ksu; }
+/* PENTING: ksu.exec() sinkron (libsu fastCmd) hanya mengembalikan BARIS TERAKHIR.
+   exec(cmd,callback) async TIDAK jalan (overload @JavascriptInterface). Jadi:
+   pakai ksu.listPackages() untuk daftar app, dan perintah output-1-baris. */
+function sh(cmd){
+  return new Promise(function(resolve){
+    if (!hasKsu()){ resolve(''); return; }
+    try{ var r = ksu.exec(cmd); resolve(r == null ? '' : String(r)); }catch(e){ resolve(''); }
+  });
+}
+/* baca file multi-baris: satukan baris jadi satu (delimiter \x01) lalu pecah */
+function readLines(p){
+  return sh("tr '\\n' '\\001' < '" + p + "' 2>/dev/null").then(function(s){
+    return String(s).split('\u0001');
+  });
+}
+function b64(s){ return btoa(unescape(encodeURIComponent(s))); }
+function readFile(p){ return sh("cat '"+p+"' 2>/dev/null"); }
+function writeFile(p, c){ return sh("printf '%s' '"+b64(c)+"' | base64 -d > '"+p+"'"); }
+function reloadWorker(){ return sh("touch '"+MODDIR+"/.reload'").then(function(){ toast("Disimpan, diterapkan maks ~5 detik"); }); }
+function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(function(){ t.classList.remove('show'); }, 1900); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function fileGamelist(){ return MODDIR + "/gamelist.txt"; }
+
+/* ===================== state ===================== */
+var state = { games:[], apps:null };
+
+function parseGames(text){
+  return text.split('\n').map(function(l){return l.trim();}).filter(function(l){ return l && l[0]!=='#'; });
+}
+
+/* ===================== daftar game ===================== */
+function renderGames(){
+  var ul = document.getElementById('glist');
+  ul.innerHTML = state.games.length
+    ? state.games.map(function(p,i){ return '<li><span class="p">'+esc(p)+'</span><button class="danger" onclick="rmGame('+i+')">Hapus</button></li>'; }).join('')
+    : '<li><span class="p" style="color:var(--dim)">(belum ada game — tambahkan)</span></li>';
+}
+function addGame(){ var i=document.getElementById('addpkg'); addPkg(i.value.trim()); i.value=''; }
+function addPkg(p){
+  if (!p) return;
+  if (!/^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)+$/.test(p)){ toast('Nama paket tidak valid'); return; }
+  if (state.games.indexOf(p)>=0){ toast('Sudah ada'); return; }
+  state.games.push(p); state.games.sort(); renderGames();
+  saveGames();
+}
+function rmGame(i){ state.games.splice(i,1); renderGames(); saveGames(); }
+function clearGames(){ state.games=[]; renderGames(); saveGames(); }
+function gamesText(){
+  return "# Cepheus Gaming Tweaks - daftar game (dikelola WebUI)\n"+
+         "# Satu nama paket per baris. Modul aktif saat app ini di foreground.\n\n"+
+         state.games.join('\n') + (state.games.length?'\n':'');
+}
+function saveGames(){
+  return writeFile(fileGamelist(), gamesText()).then(function(){ return reloadWorker(); });
+}
+
+/* ===================== app picker ===================== */
+var QUICK = [
+  ['PUBG Mobile','com.tencent.ig'],
+  ['PUBG (KR)','com.pubg.krmobile'],
+  ['PUBG (VN)','com.vng.pubgmobile'],
+  ['Mobile Legends','com.mobile.legends'],
+  ['Free Fire','com.dts.freefireth'],
+  ['Free Fire MAX','com.dts.freefiremax'],
+  ['COD Mobile','com.activision.callofduty.shooter'],
+  ['Genshin Impact','com.miHoYo.GenshinImpact'],
+  ['Honkai: Star Rail','com.HoYoverse.hkrpg']
+];
+function openPicker(){ document.getElementById('modal').classList.add('show'); renderQuick(); loadApps(); }
+function closePicker(){ document.getElementById('modal').classList.remove('show'); }
+function setStatus(t){ var e=document.getElementById('appstatus'); if (e) e.textContent = t || ''; }
+function jarr(s){ try{ var v = JSON.parse(s); return (v && v.length) ? v : []; }catch(e){ return []; } }
+function norm(s){ return String(s==null?'':s).replace(/^package:/,'').trim(); }
+function validPkg(p){ return /^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*$/.test(p); }
+function parsePkgs(txt){
+  var out = [];
+  String(txt).split('\n').forEach(function(l){ var p = norm(l); if (validPkg(p)) out.push(p); });
+  return out;
+}
+function renderQuick(){
+  var q = document.getElementById('quick'); if (!q) return;
+  q.innerHTML = QUICK.map(function(g){
+    return '<button class="ghost" style="font-size:12px;padding:6px 10px" onclick="pick(\''+g[1]+'\')">'+esc(g[0])+'</button>';
+  }).join('');
+}
+
+/* daftar app: pakai API bawaan ksu.listPackages (JSON, tanpa shell) */
+function fromKsu(type){
+  try{ if (hasKsu() && typeof ksu.listPackages === 'function') return jarr(ksu.listPackages(type)).map(norm).filter(validPkg); }catch(e){}
+  return [];
+}
+function wait(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+async function loadUserApps(){
+  var a = fromKsu("user");
+  for (var i = 0; i < 4 && !a.length; i++){ await wait(300); a = fromKsu("user"); }
+  if (a.length) return a;
+  return parsePkgs(await sh("pm list packages -3 2>/dev/null"));
+}
+async function loadSysApps(){
+  var a = fromKsu("system");
+  for (var i = 0; i < 4 && !a.length; i++){ await wait(300); a = fromKsu("system"); }
+  return a;
+}
+
+async function loadApps(force){
+  if (state.apps && !force){ renderApps(); return; }
+  state.apps = [];
+  document.getElementById('applist').innerHTML = '<div style="color:var(--dim);padding:10px">memuat…</div>';
+  var showSys = document.getElementById('showsys') && document.getElementById('showsys').checked;
+  setStatus(showSys ? 'memuat app…' : '');
+  var user = [], sys = [];
+  try{ user = await loadUserApps(); }catch(e){}
+  if (showSys){ setStatus('memuat app sistem…'); try{ sys = await loadSysApps(); }catch(e){} }
+  var seen = {}, pkgs = [];
+  user.concat(sys).forEach(function(p){ if (p && !seen[p]){ seen[p] = 1; pkgs.push(p); } });
+  /* label + status sistem (per-batch agar tidak berat) */
+  var names = {}, sysmap = {};
+  if (hasKsu() && ksu.getPackagesInfo){
+    for (var i = 0; i < pkgs.length; i += 60){
+      try{
+        jarr(await Promise.resolve(ksu.getPackagesInfo(JSON.stringify(pkgs.slice(i, i + 60))))).forEach(function(it){
+          if (it && it.packageName){ names[it.packageName] = it.appLabel || ''; sysmap[it.packageName] = !!it.isSystem; }
+        });
+      }catch(e){}
+    }
+  }
+  state.apps = pkgs.map(function(p){ return {p:p, n:names[p]||p, u:!sysmap[p]}; })
+    .sort(function(a,b){ return String(a.n||a.p).localeCompare(String(b.n||b.p)); });
+  setStatus(pkgs.length + ' aplikasi' + (showSys ? ' (termasuk sistem)' : ' (terpasang)'));
+  renderApps();
+}
+function renderApps(){
+  var q = (document.getElementById('search').value||'').toLowerCase();
+  var list = (state.apps||[]).filter(function(a){
+    var n = String(a.n||a.p).toLowerCase(), p = String(a.p||'').toLowerCase();
+    return !q || n.indexOf(q) >= 0 || p.indexOf(q) >= 0;
+  });
+  document.getElementById('applist').innerHTML = list.slice(0,1000).map(function(a){
+    var ini = String(a.n||a.p).slice(0,1).toUpperCase();
+    return '<div class="app" onclick="pick(\''+a.p+'\')">'+
+      '<div class="ico">'+esc(ini)+'</div>'+
+      '<div class="n"><b>'+esc(a.n)+'</b><small>'+esc(a.p)+(a.u?'':' • sistem')+'</small></div></div>';
+  }).join('') || '<div style="color:var(--dim);padding:10px">tidak ada</div>';
+}
+function pick(p){ addPkg(p); toast('Ditambah: '+p); closePicker(); }
+
+async function saveRawNoop(){}
+
+/* ===================== boot ===================== */
+async function boot(){
+  if (!hasKsu()) document.getElementById('noksu').style.display='block';
+  try{ if (hasKsu() && ksu.moduleInfo){ var inf=JSON.parse(ksu.moduleInfo()); if(inf&&inf.moduleDir) MODDIR=inf.moduleDir; } }catch(e){}
+  document.getElementById('search').addEventListener('input', renderApps);
+  var lines = await readLines(fileGamelist());
+  state.games = parseGames(lines.join('\n')); renderGames();
+}
+boot();
+</script>
+</body>
+</html>
